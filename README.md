@@ -1,4 +1,4 @@
-<h1>📘 Datastream: PostgreSQL → BigQuery Real-Time Replication (CDC)</h1>
+<h1> Datastream: PostgreSQL → BigQuery Real-Time Replication (CDC)</h1>
 
 <p>
 This project demonstrates how to build a <strong>real-time Change Data Capture (CDC)</strong> pipeline on Google Cloud using:
@@ -17,7 +17,7 @@ from PostgreSQL into BigQuery with low latency.
 
 <hr>
 
-<h2>🚀 Architecture Overview</h2>
+<h2> Architecture Overview</h2>
 
 <pre>
 Cloud SQL PostgreSQL (logical decoding enabled)
@@ -33,7 +33,7 @@ Cloud SQL PostgreSQL (logical decoding enabled)
 
 <hr>
 
-<h2>🎯 Objectives</h2>
+<h2> Objectives</h2>
 
 <ul>
   <li>Deploy a PostgreSQL instance on Cloud SQL</li>
@@ -46,13 +46,13 @@ Cloud SQL PostgreSQL (logical decoding enabled)
 
 <hr>
 
-<h2>🟦 Task 1 — Create and Populate PostgreSQL in Cloud SQL</h2>
+<h2> Task 1 — Create and Populate PostgreSQL in Cloud SQL</h2>
 
-<h3>✔ Enable Cloud SQL API</h3>
+<h3> Enable Cloud SQL API</h3>
 <pre><code>gcloud services enable sqladmin.googleapis.com
 </code></pre>
 
-<h3>✔ Create the PostgreSQL instance</h3>
+<h3> Create the PostgreSQL instance</h3>
 <pre><code>POSTGRES_INSTANCE=postgres-db
 DATASTREAM_IPS=34.74.216.163,34.75.166.194,104.196.6.24,34.73.50.6,35.237.45.20
 
@@ -65,11 +65,11 @@ gcloud sql instances create ${POSTGRES_INSTANCE} \
     --database-flags=cloudsql.logical_decoding=on
 </code></pre>
 
-<h3>✔ Connect to PostgreSQL</h3>
+<h3> Connect to PostgreSQL</h3>
 <pre><code>gcloud sql connect postgres-db --user=postgres
 </code></pre>
 
-<h3>✔ Create schema, table, and insert sample data</h3>
+<h3> Create schema, table, and insert sample data</h3>
 
 <pre><code>CREATE SCHEMA IF NOT EXISTS test;
 
@@ -97,7 +97,7 @@ SELECT PG_CREATE_LOGICAL_REPLICATION_SLOT('test_replication', 'pgoutput');
 
 <hr>
 
-<h2>🟩 Task 2 — Configure Datastream and Start Replication</h2>
+<h2> Task 2 — Configure Datastream and Start Replication</h2>
 
 <h3>✔ PostgreSQL Connection Profile (<em>postgres-cp</em>)</h3>
 <ul>
@@ -111,12 +111,12 @@ SELECT PG_CREATE_LOGICAL_REPLICATION_SLOT('test_replication', 'pgoutput');
   <li>Encryption: None</li>
 </ul>
 
-<h3>✔ BigQuery Connection Profile (<em>bigquery-cp</em>)</h3>
+<h3> BigQuery Connection Profile (<em>bigquery-cp</em>)</h3>
 <ul>
   <li>Region: <strong>us-east4</strong></li>
 </ul>
 
-<h3>✔ Create Datastream Stream (<em>test-stream</em>)</h3>
+<h3> Create Datastream Stream (<em>test-stream</em>)</h3>
 <ul>
   <li>Region: <strong>us-east4</strong></li>
   <li>Source: postgres-cp</li>
@@ -129,47 +129,68 @@ SELECT PG_CREATE_LOGICAL_REPLICATION_SLOT('test_replication', 'pgoutput');
 
 <p>Stream successfully validated and started.</p>
 
+<h3> Datastream Stream Configuration</h3>
+<p>This screenshot shows the configuration of the Datastream stream (region, source, and destination types).</p>
+<img src="screenshots/datastream_stream_creation.png" width="900px" />
+
 <hr>
 
-<h2>🟧 Task 3 — Validate Initial Backfill in BigQuery</h2>
+<h2> Task 3 — Validate Initial Backfill in BigQuery</h2>
 
-<p>Datastream automatically created a dataset and table in BigQuery.</p>
+<p>
+Once the stream started, Datastream automatically created a dataset and the table <code>test.example_table</code> in BigQuery
+and performed an initial backfill of the existing rows from PostgreSQL.
+</p>
 
 <pre><code>SELECT * FROM test.example_table ORDER BY id;
 </code></pre>
 
-<p>The initial inserted rows appeared in BigQuery.</p>
+<h3> BigQuery Query Results</h3>
+<p>This screenshot shows the replicated rows from PostgreSQL appearing in BigQuery.</p>
+<img src="screenshots/bigquery_results.png" width="900px" />
+
+<h3> BigQuery Table Structure &amp; Metadata</h3>
+<p>
+Here we see the <code>example_table</code> schema in BigQuery, including the automatically added
+<code>datastream_metadata</code> field, which stores CDC metadata for each event.
+</p>
+<img src="screenshots/example_table_metadata.png" width="900px" />
 
 <hr>
 
-<h2>🟪 Task 4 — Test Real-Time CDC Replication</h2>
+<h2> Task 4 — Test Real-Time CDC Replication</h2>
 
-<h3>✔ Insert new rows</h3>
+<p>
+To validate continuous replication, new changes were applied in PostgreSQL and then verified in BigQuery.
+</p>
+
+<h3> Insert new rows</h3>
 <pre><code>INSERT INTO test.example_table (text_col, int_col, date_col) VALUES
 ('abc', 0, '2022-10-01 00:00:00'),
 ('def', 1, NULL),
 ('ghi', -987, NOW());
 </code></pre>
 
-<h3>✔ Update rows</h3>
+<h3> Update rows</h3>
 <pre><code>UPDATE test.example_table SET int_col = int_col * 2;
 </code></pre>
 
-<h3>✔ Delete a row</h3>
+<h3> Delete a row</h3>
 <pre><code>DELETE FROM test.example_table WHERE text_col = 'abc';
 </code></pre>
 
-<h3>✔ Verify changes in BigQuery</h3>
+<h3> Verify changes in BigQuery</h3>
 <pre><code>SELECT * FROM test.example_table ORDER BY id;
 </code></pre>
 
 <p>
-All inserts, updates, and deletes appeared in BigQuery within seconds, proving real-time CDC replication works.
+All inserts, updates, and deletes appeared in BigQuery within seconds, proving that real-time CDC replication works
+end-to-end.
 </p>
 
 <hr>
 
-<h2>🏁 Summary</h2>
+<h2> Summary</h2>
 
 <p>This project demonstrates a real-time ingestion pipeline using:</p>
 
@@ -190,7 +211,7 @@ All inserts, updates, and deletes appeared in BigQuery within seconds, proving r
 
 <hr>
 
-<h2>📂 Repository Structure</h2>
+<h2> Repository Structure</h2>
 
 <pre>
 datastream-postgresql-to-bigquery/
@@ -207,6 +228,9 @@ datastream-postgresql-to-bigquery/
 │   ├── create_cloudsql_instance.sh
 │   └── connect_to_postgres.sh
 │
-└── diagrams/
-    └── architecture.png (optional)
+└── screenshots/
+    ├── bigquery_results.png
+    ├── example_table_metadata.png
+    └── datastream_stream_creation.png
 </pre>
+
